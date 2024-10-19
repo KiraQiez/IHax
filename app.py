@@ -31,6 +31,13 @@ logging.basicConfig(level=logging.DEBUG)
 def home_page():
     return render_template('home.html')
 
+
+# Route for Homepage (contact.html)
+@app.route('/contact')
+def contact():
+    return render_template('contact.html')
+
+# Route for Login Page (HTML)
 @app.route('/login', methods=['GET', 'POST'])
 def login_page():
     if request.method == 'POST':
