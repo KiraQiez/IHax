@@ -26,6 +26,12 @@ app_key = '0250325b6e1ecbeaa7f31ce24da04370'  # Replace with your Edamam App Key
 def home_page():
     return render_template('home.html')
 
+
+# Route for Homepage (contact.html)
+@app.route('/contact')
+def home_page():
+    return render_template('contact.html')
+
 # Route for Login Page (HTML)
 @app.route('/login', methods=['GET', 'POST'])
 def login_page():
