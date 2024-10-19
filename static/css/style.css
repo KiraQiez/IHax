@@ -138,7 +138,7 @@ body {
 
 /* Service Cards */
 .service-card {
-    background-color: rgba(255, 255, 255, 0.1); /* Slightly transparent white */
+    background-color: rgba(255, 255, 255, 0.1);/* Slightly transparent white */
     backdrop-filter: blur(10px); /* Blur effect to enhance readability */
     border-radius: 15px;
     padding: 20px;
@@ -162,13 +162,19 @@ body {
 
 /*Food Storage*/
 
-.table-hover tbody tr:hover {
-    background-color: rgba(241, 53, 109, 0.2); /* Custom hover effect */
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    padding: 0;
+    border-radius: 10px;
+    overflow: hidden;
 }
 
-table {
-    color: #f4f1eb;
+.food-data {
+    font-size: 16px;
+    color: #666;
 }
+
 
 /*Login*/
 .login-container {
@@ -339,3 +345,4 @@ table {
     font-weight: bold; /* Make the text bold */
     text-align: center; /* Center the text inside the progress bar */
 }
+
