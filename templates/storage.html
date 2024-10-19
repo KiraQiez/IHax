@@ -86,6 +86,11 @@
                         </tbody>
                     </table>
                     
+                    <!-- Display a message if no food items are available -->
+                    <div id="empty-message" class="text-center text-muted mt-4" style="display: none;">
+                        You have no food in your inventory.
+                    </div>
+                    
                     <!-- Pagination controls -->
                     <nav>
                         <ul class="pagination justify-content-center" id="pagination-controls">
@@ -138,8 +143,13 @@
                 .then(response => response.json())
                 .then(data => {
                     foodData = data; // Store the food data globally
-                    displayFoodStorage(currentPage);
-                    setupPagination();
+                    if (foodData.length === 0) {
+                        document.getElementById('empty-message').style.display = 'block'; // Show "no food" message
+                    } else {
+                        document.getElementById('empty-message').style.display = 'none'; // Hide "no food" message
+                        displayFoodStorage(currentPage);
+                        setupPagination();
+                    }
                 })
                 .catch(error => console.error('Error fetching data:', error));
         });
