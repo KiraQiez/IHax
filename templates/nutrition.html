@@ -6,117 +6,140 @@
     <title>AI-powered Recipe Recommender</title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://kit.fontawesome.com/a076d05399.js"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+
+    
 </head>
 
 <body>
-    <header>
-        <nav class="navbar">
-            <div class="logo d-flex align-items-center">
-                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo">
-                <p>HappyRoast</p>
+   
+        <header>
+            <nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm">
+                <div class="container">
+                    <div class="logo d-flex align-items-center">
+                        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" width="50">
+                        <p class="ms-2 mb-0">HappyRoast</p>
+                    </div>
+                    <ul class="nav navbar-nav ms-auto">
+                        <li class="nav-item"><a href="/" class="nav-link">Home</a></li>
+                        <li class="nav-item"><a href="/storage" class="nav-link">Storage</a></li>
+                        <li class="nav-item"><a href="/nutrition" class="nav-link">Recipe</a></li>
+                        <li class="nav-item"><a href="/contact" class="nav-link">Contact</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </header>
+
+        
+            <div class="recipeMain">
+                <h1>HappyRoast</h1>
+                <p>Your AI-powered solution to reduce food waste and maximize food freshness. <br>
+                    Get personalized tips, recipe ideas, and sustainability insights to make the most of every meal.</p>
+
             </div>
-            <ul class="nav-links d-flex">
-                <li><a href="/">Home</a></li>
-                <li><a href="/storage">Storage</a></li>
-                <li><a href="/nutrition">Recipe</a></li>
-                <li><a href="/contact">Contact</a></li>
-            </ul>
-        </nav>
-    </header>
-
-    <div class="container mt-5">
-        <!-- Search Section -->
-        <div id="search-section" class="mb-5">
-            <div id="ingredient-list">
-                <input type="text" class="ingredient-input form-control mb-2" placeholder="Enter an ingredient">
-            </div>
-            <button class="btn btn-secondary mb-3" onclick="addIngredientField()">Add Another Ingredient</button>
-
-            <!-- Calorie Filter Dropdown -->
-            <div class="mb-3">
-                <label for="calories" class="form-label">Calories Target:</label>
-                <select class="form-select" id="calories" name="calories" aria-label="Calories Target">
-                    <option value="" selected>No Target</option>
-                    <option value="1">Below 500 kcal</option>
-                    <option value="2">Below 1000 kcal</option>
-                    <option value="3">More than 2000 kcal</option>
-                </select>
-            </div>
-
-            <button class="btn btn-primary" onclick="searchRecipes()">Search</button>
-        </div>
-
-        <!-- Single Card for Recipe Results -->
-        <div class="container mt-5">
-            <h2>Recommended Recipes</h2>
-            <div class="card mb-3">
-                <div class="card-header">Recommended Recipes</div>
-                <div class="card-body" id="recipe-results">
-                    <!-- Recipes will be dynamically added here -->
+    
+        <div class="ss container mt-5">
+            <!-- Search Section -->
+            
+            <div class="search card shadow-sm search-section">
+                <div class="card-body">
+                    
+                    <p class="card-text">Select your preferences</p>
+    
+                    <div class="input-group-wrapper">
+                        <!-- Ingredient Input -->
+                        <div class="mb-3">
+                            <label for="ingredient-input" class="form-label">Ingredients (comma-separated)</label>
+                            <input type="text" class="form-control" id="ingredient-input" placeholder="e.g., chicken, tomato, cheese">
+                        </div>
+    
+                        <!-- Calories Target -->
+                        <div class="mb-3">
+                            <label for="calories-select" class="form-label">Calories Target</label>
+                            <select id="calories-select" class="form-select">
+                                <option value="">Any</option>
+                                <option value="500">Below 500</option>
+                                <option value="1000">Below 1000</option>
+                                <option value="2000">Below 2000</option>
+                            </select>
+                        </div>
+    
+                        <!-- Meal Type -->
+                        <div class="mb-3">
+                            <label for="meal-type-select" class="form-label">Meal Type</label>
+                            <select id="meal-type-select" class="form-select">
+                                <option value="">Any</option>
+                                <option value="breakfast">Breakfast</option>
+                                <option value="brunch">Brunch</option>
+                                <option value="lunch/dinner">Lunch/Dinner</option>
+                                <option value="snack">Snack</option>
+                                <option value="teatime">Teatime</option>
+                            </select>
+                        </div>
+    
+                        <!-- Search Button -->
+                        <button class="mb-3 btn btn-primary" onclick="searchRecipes()">
+                            <i class="fas fa-search"></i> Search
+                        </button>
+                    </div>
                 </div>
             </div>
-        </div>
-    </div>
+
+            <!-- Single Card for Recipe Results -->
+       
+        
+            <div class="card mb-3 mt-4">
+                <div class="card-header">Recommended Recipes</div>
+                <div class="card-body" id="recipe-results"></div>
+            </div>
+       
+    
+
+    
+
+        
+    
 
     <script>
-        // Function to add new ingredient input fields
-        function addIngredientField() {
-            let ingredientList = document.getElementById('ingredient-list');
-            let inputField = document.createElement('input');
-            inputField.type = 'text';
-            inputField.className = 'ingredient-input form-control mb-2';
-            inputField.placeholder = 'Enter another ingredient';
-            ingredientList.appendChild(inputField);
-        }
-
-        // Function to search and display recipe results
+        // Search for recipes
         function searchRecipes() {
-            let ingredients = [];
-            let ingredientInputs = document.getElementsByClassName('ingredient-input');
-
-            // Collect all ingredient input values
-            for (let input of ingredientInputs) {
-                if (input.value.trim() !== "") {
-                    ingredients.push(input.value.trim());
-                }
-            }
-
-            let query = ingredients.join(', ');  // Join ingredients with commas
-            let calories = document.getElementById('calories').value;
+            const ingredients = document.getElementById('ingredient-input').value;
+            const calories = document.getElementById('calories-select').value;
+            const mealType = document.getElementById('meal-type-select').value;
 
             fetch('/search', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: 'query=' + encodeURIComponent(query) + '&calories=' + calories
+                body: `query=${encodeURIComponent(ingredients)}&calories=${encodeURIComponent(calories)}&mealType=${encodeURIComponent(mealType)}`
             })
             .then(response => response.json())
             .then(data => {
                 let recipeResults = document.getElementById('recipe-results');
                 let output = ``;
 
-                data.forEach((recipe, index) => {
+                data.forEach(recipe => {
                     output += `
                         <div class="d-flex justify-content-between align-items-center mb-4">
                             <div class="food-data" style="width: 80%;">
                                 <p><strong>${recipe.Label}</strong></p>
                                 <div class="progress">
-                                    <div class="progress-bar" role="progressbar" style="width: ${parseFloat(recipe.Similarity)}%;" aria-valuenow="${parseFloat(recipe.Similarity)}" aria-valuemin="0" aria-valuemax="100">
+                                    <div class="progress-bar bg-success" role="progressbar" style="width: ${parseFloat(recipe.Similarity)}%;" aria-valuenow="${parseFloat(recipe.Similarity)}" aria-valuemin="0" aria-valuemax="100">
                                         ${recipe.Similarity}
                                     </div>
                                 </div>
                             </div>
-                            <a href="${recipe.URL}" class="btn btn-primary" target="_blank">View Recipe</a>
+                            <div class="btn-group" role="group">
+                                <a href="${recipe.URL}" class="btn btn-primary" target="_blank">View Recipe</a>
+                            </div>
                         </div>
                     `;
                 });
 
-                // Append the recipes to the card body without creating a new card
                 recipeResults.innerHTML = output;
             });
         }
     </script>
-    
 </body>
-
 </html>
