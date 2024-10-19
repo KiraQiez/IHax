@@ -38,8 +38,9 @@ def login_page():
         cursor.execute("SELECT * FROM account WHERE username = %s", (username,))
         user = cursor.fetchone()
 
-        if user and check_password_hash(user[3], password):  # user[3] is the password column
+        if user and check_password_hash(user[2], password):  # user[2] is the hashed password column
             session['user_id'] = user[0]  # Store user ID in session
+            session['username'] = user[1]  # Store username in session
             flash('Login successful!', 'success')
             return redirect(url_for('home_page'))  # Redirect to the home page
         else:
@@ -47,12 +48,19 @@ def login_page():
 
     return render_template('login.html')
 
+# Route to handle Logout
+@app.route('/logout')
+def logout():
+    session.clear()  # Clear session data to log the user out
+    flash('You have been logged out.', 'success')
+    return redirect(url_for('home_page'))
+
+
 # Route for Register Page (HTML)
 @app.route('/register', methods=['GET', 'POST'])
 def register_page():
     if request.method == 'POST':
         username = request.form['username']
-        email = request.form['email']
         password = request.form['password']
         confirm_password = request.form['confirm_password']
 
@@ -67,7 +75,7 @@ def register_page():
         # Insert new user into the database
         cursor = db.cursor()
         try:
-            cursor.execute("INSERT INTO account (username, email, password) VALUES (%s, %s, %s)", (username, email, hashed_password))
+            cursor.execute("INSERT INTO account (username, password) VALUES (%s, %s)", (username, hashed_password))
             db.commit()
             flash('Registration successful! Please login.', 'success')
             return redirect(url_for('login_page'))
