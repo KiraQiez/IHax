@@ -29,7 +29,7 @@ def home_page():
 
 # Route for Homepage (contact.html)
 @app.route('/contact')
-def home_page():
+def contact():
     return render_template('contact.html')
 
 # Route for Login Page (HTML)
