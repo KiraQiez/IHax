@@ -4,9 +4,11 @@ import requests
 import pandas as pd
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+import logging
 
+# Initialize the Flask application
 app = Flask(__name__)
-app.secret_key = '2a38fdd7dea359fbd744fe41'
+app.secret_key = '2a38fdd7dea359fbd744fe41'  # Replace with a secure key in production
 
 # Database connection details
 db = pymysql.connect(
@@ -65,6 +67,7 @@ def search_recipes(query, app_id, app_key, calories=None, mealType=None):
             'Label': recipe['recipe']['label'],
             'Ingredients': ', '.join(recipe['recipe']['ingredientLines']),
             'Calories': recipe['recipe'].get('calories', 0),
+            'Calories': recipe['recipe'].get('calories', 0),
             'URL': recipe['recipe']['url']
         })
 
@@ -73,6 +76,9 @@ def search_recipes(query, app_id, app_key, calories=None, mealType=None):
 
 # Function for content-based filtering using cosine similarity
 def recommend_recipes(df, recipe_index):
+    if df.empty:
+        return []  # Return empty if DataFrame is empty
+
     vectorizer = CountVectorizer()
     X = vectorizer.fit_transform(df['Ingredients'])
     cosine_sim = cosine_similarity(X, X)
@@ -107,6 +113,12 @@ def search():
     recommendations = recommend_recipes(recipes_df, 0)
 
     return jsonify(recommendations)
+
+# Error handler for logging exceptions
+@app.errorhandler(Exception)
+def handle_exception(e):
+    logging.error(f"An error occurred: {e}")
+    return "An internal error occurred", 500
 
 if __name__ == '__main__':
     app.run(debug=True)

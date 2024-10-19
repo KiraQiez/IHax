@@ -7,6 +7,7 @@
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
 </head>
 <body>
     <div class="base">
@@ -24,10 +25,10 @@
                 </ul>
             </nav>
         </header>
-    <main>
+        <main>
             <div class="register-container">
                 <h2>REGISTER</h2>
-                <form action="/register" method="POST">
+                <form id="register-form">
                     <label for="username">Username</label>
                     <input type="text" id="username" name="username" placeholder="Enter Username" required>
 
@@ -43,14 +44,16 @@
                         <button type="button" class="toggle-password" title="Show/Hide Password">👁️</button>
                     </div>
 
-                    <button type="submit" class="register-btn">REGISTER</button>
+                    <button type="button" class="register-btn" id="register-button">REGISTER</button>
                 </form>
                 <p>Already have an account? <a href="/login">Login</a></p>
             </div>
         </main>
     </div>
     
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
+        // Password toggle functionality
         const togglePasswordButtons = document.querySelectorAll('.toggle-password');
 
         togglePasswordButtons.forEach(button => {
@@ -61,6 +64,79 @@
                 this.textContent = type === 'password' ? '👁️' : '🙈';
             });
         });
+
+        document.getElementById('register-button').addEventListener('click', function() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+
+            // Check if the passwords match
+            if (password !== confirmPassword) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Password mismatch!',
+                    text: 'Please make sure both passwords match.',
+                });
+                return;  // Stop the function if passwords don't match
+            }
+
+            // Check if the username is already taken
+            fetch(`/check-username?username=${encodeURIComponent(username)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.exists) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Username already taken!',
+                            text: 'Please choose a different username.',
+                        });
+                    } else {
+                        // Show the SweetAlert success popup
+                        Swal.fire({
+                            title: 'Registration successful!',
+                            text: 'Please log in.',
+                            icon: 'success',
+                            showCancelButton: false,
+                            confirmButtonText: 'OK'
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                // Submit the form using AJAX
+                                const formData = new FormData(document.getElementById('register-form'));
+                                fetch('/register', {
+                                    method: 'POST',
+                                    body: formData
+                                }).then(response => {
+                                    if (response.ok) {
+                                        window.location.href = '/login';  // Redirect to login page
+                                    } else {
+                                        return response.text().then(text => {
+                                            Swal.fire({
+                                                icon: 'error',
+                                                title: 'Registration failed!',
+                                                text: text || 'Please try again later.',
+                                            });
+                                        });
+                                    }
+                                }).catch(error => {
+                                    Swal.fire({
+                                        icon: 'error',
+                                        title: 'Error!',
+                                        text: 'There was a problem with your request.',
+                                    });
+                                });
+                            }
+                        });
+                    }
+                })
+                .catch(error => {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error!',
+                        text: 'There was a problem checking the username.',
+                    });
+                });
+        });
+
     </script>
 </body>
 </html>
