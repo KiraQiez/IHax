@@ -1,7 +1,9 @@
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify, request, redirect, url_for, flash, session
 import pymysql
+from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
+app.secret_key = '2a38fdd7dea359fbd744fe41'
 
 # Database connection details
 db = pymysql.connect(
@@ -15,6 +17,57 @@ db = pymysql.connect(
 @app.route('/')
 def home_page():
     return render_template('home.html')
+
+# Route for Login Page (HTML)
+@app.route('/login', methods=['GET', 'POST'])
+def login_page():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+
+        # Check credentials in the database
+        cursor = db.cursor()
+        cursor.execute("SELECT * FROM account WHERE username = %s", (username,))
+        user = cursor.fetchone()
+
+        if user and check_password_hash(user[3], password):  # user[3] is the password column
+            session['user_id'] = user[0]  # Store user ID in session
+            flash('Login successful!', 'success')
+            return redirect(url_for('home_page'))  # Redirect to the home page
+        else:
+            flash('Invalid username or password. Please try again.', 'danger')
+
+    return render_template('login.html')
+
+# Route for Register Page (HTML)
+@app.route('/register', methods=['GET', 'POST'])
+def register_page():
+    if request.method == 'POST':
+        username = request.form['username']
+        email = request.form['email']
+        password = request.form['password']
+        confirm_password = request.form['confirm_password']
+
+        # Check if passwords match
+        if password != confirm_password:
+            flash('Passwords do not match!', 'danger')
+            return render_template('register.html')
+
+        # Hash the password before storing it
+        hashed_password = generate_password_hash(password)
+
+        # Insert new user into the database
+        cursor = db.cursor()
+        try:
+            cursor.execute("INSERT INTO account (username, email, password) VALUES (%s, %s, %s)", (username, email, hashed_password))
+            db.commit()
+            flash('Registration successful! Please login.', 'success')
+            return redirect(url_for('login_page'))
+        except pymysql.IntegrityError:
+            flash('Username already exists. Please choose a different username.', 'danger')
+
+    return render_template('register.html')
+
 
 # Route for Storage Page (HTML)
 @app.route('/storage')
