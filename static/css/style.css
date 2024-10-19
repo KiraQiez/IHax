@@ -119,8 +119,17 @@ body {
 
 .base2 {
     padding: 1px;
-    height: 530px;
-    background-image: url('../images/bg5.png');  /* Correct relative path */
+    height: 100svh;
+    background-image: url('../images/bg6.png');  /* Correct relative path */
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.base3 {
+    padding: 1px;
+    height: 100svh;
+    background-image: url('../images/bg7.png');  /* Correct relative path */
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -192,27 +201,6 @@ body {
     text-align: center; /* Center the text inside the progress bar */
 }
 
-.selected-ingredients {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-}
-
-.ingredient-tag {
-    background-color: #f1f1f1;
-    border: 1px solid #ced4da;
-    border-radius: 20px;
-    padding: 5px 15px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.ingredient-tag span {
-    cursor: pointer;
-    font-weight: bold;
-    color: red;
-}
 
 .input-group-wrapper {
     display: flex;
@@ -220,22 +208,46 @@ body {
     gap: 10px;
 }
 
+/* Input Fields - Red Theme */
 .input-group-wrapper .form-select, 
 .input-group-wrapper .form-control {
     width: 245px;
     height: 60px;
     margin-bottom: 10px;
+
+    transition: all 0.3s ease; /* Smooth transition */
 }
 
-.input-group-wrapper .form-control{
+.input-group-wrapper .form-control {
     width: 500px;
+    transition: all 0.3s ease;
 }
+
+/* Change input field appearance on hover and focus */
+.input-group-wrapper .form-select:hover, 
+.input-group-wrapper .form-control:hover {
+    border-color: #f1356d; /* Darker red border on hover */
+}
+
+.input-group-wrapper .form-select:focus, 
+.input-group-wrapper .form-control:focus {
+    outline: none;
+    
+    border-color: #f1356d; /* More intense red border on focus */
+    box-shadow: 4px 4px 4px rgba(241, 53, 109, 0.8); /* Subtle red glow */
+}
+
 
 .input-group-wrapper .btn {
     display: flex;
     align-items: center;
     height: 38px;
-    background-color: #007bff;
+    
+
+}
+
+.btn:hover{
+    opacity: 0.9;
 }
 
 .input-group-wrapper .btn i {
@@ -254,9 +266,41 @@ body {
     padding: 0 !important;
 }
 
-.recipeMain{
-    
+.recipeMain {
     text-align: center;
-    color:#fff;
-    padding: 120px;
+    color: #fff;
+    padding: 100px;
+}
+
+.recipeMain h1 {
+    font-size: 4rem;
+    font-weight: bold;
+}
+
+.recipeMain p {
+    font-size: 1.2rem;
+    margin-top: 20px;
+    color: #ddd;
+}
+
+.recipe{
+    margin-top: 110px;
+    margin-bottom: 20px;
+}
+
+.btn-custom {
+    background-color: #f1356d;
+    border: 2px solid transparent;  /* Initially no visible border */
+    color: #ffffff;
+    font-size: 1.1rem;
+    padding: 10px;
+    font-weight: bold;
+    transition: all 0.3s ease; /* Smooth transition for hover effect */
+    border-radius: 8px;
+}
+
+.btn-custom:hover {
+    background-color: #d12c54;  /* Darker shade of red on hover */
+    border-color: #f1356d; /* Darker red border on hover */
+    color: white; /* Keep text white */
 }

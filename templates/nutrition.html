@@ -9,12 +9,10 @@
     <script src="https://kit.fontawesome.com/a076d05399.js"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
-
-    
 </head>
 
 <body>
-   
+    <div class="base2">
         <header>
             <nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm">
                 <div class="container">
@@ -32,29 +30,23 @@
             </nav>
         </header>
 
-        
-            <div class="recipeMain">
-                <h1>HappyRoast</h1>
-                <p>Your AI-powered solution to reduce food waste and maximize food freshness. <br>
-                    Get personalized tips, recipe ideas, and sustainability insights to make the most of every meal.</p>
-
-            </div>
+        <div class="recipeMain">
+            <h1>HappyRoast</h1>
+            <p>Your AI-powered solution to reduce food waste and maximize food freshness. <br>
+                Get personalized tips, recipe ideas, and sustainability insights to make the most of every meal.</p>
+        </div>
     
         <div class="ss container mt-5">
             <!-- Search Section -->
-            
             <div class="search card shadow-sm search-section">
                 <div class="card-body">
-                    
-                    <p class="card-text">Select your preferences</p>
-    
                     <div class="input-group-wrapper">
                         <!-- Ingredient Input -->
                         <div class="mb-3">
                             <label for="ingredient-input" class="form-label">Ingredients (comma-separated)</label>
                             <input type="text" class="form-control" id="ingredient-input" placeholder="e.g., chicken, tomato, cheese">
                         </div>
-    
+
                         <!-- Calories Target -->
                         <div class="mb-3">
                             <label for="calories-select" class="form-label">Calories Target</label>
@@ -65,7 +57,7 @@
                                 <option value="2000">Below 2000</option>
                             </select>
                         </div>
-    
+
                         <!-- Meal Type -->
                         <div class="mb-3">
                             <label for="meal-type-select" class="form-label">Meal Type</label>
@@ -78,29 +70,28 @@
                                 <option value="teatime">Teatime</option>
                             </select>
                         </div>
-    
+
                         <!-- Search Button -->
-                        <button class="mb-3 btn btn-primary" onclick="searchRecipes()">
+                        <button class="mb-3 btn btn-danger" onclick="searchRecipes()">
                             <i class="fas fa-search"></i> Search
                         </button>
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
 
+    <div class="base3">
+        <section class="recipeRecommendation">
             <!-- Single Card for Recipe Results -->
-       
-        
-            <div class="card mb-3 mt-4">
-                <div class="card-header">Recommended Recipes</div>
-                <div class="card-body" id="recipe-results"></div>
+            <div class="ss container">
+                <div class="card mb-3 recipe">
+                    <div class="card-header">Recommended Recipes</div>
+                    <div class="card-body" id="recipe-results"></div>
+                </div>
             </div>
-       
-    
-
-    
-
-        
-    
+        </section>
+    </div>
 
     <script>
         // Search for recipes
@@ -125,19 +116,27 @@
                             <div class="food-data" style="width: 80%;">
                                 <p><strong>${recipe.Label}</strong></p>
                                 <div class="progress">
-                                    <div class="progress-bar bg-success" role="progressbar" style="width: ${parseFloat(recipe.Similarity)}%;" aria-valuenow="${parseFloat(recipe.Similarity)}" aria-valuemin="0" aria-valuemax="100">
+                                    <div class="progress-bar bg-danger" role="progressbar" style="width: ${parseFloat(recipe.Similarity)}%;" aria-valuenow="${parseFloat(recipe.Similarity)}" aria-valuemin="0" aria-valuemax="100">
                                         ${recipe.Similarity}
                                     </div>
                                 </div>
                             </div>
                             <div class="btn-group" role="group">
-                                <a href="${recipe.URL}" class="btn btn-primary" target="_blank">View Recipe</a>
+                                <a href="${recipe.URL}" class="btn btn-danger" target="_blank">View Recipe</a>
                             </div>
                         </div>
+                        <hr>
                     `;
                 });
 
                 recipeResults.innerHTML = output;
+
+                // Scroll to the results section
+                document.querySelector('.recipeRecommendation').scrollIntoView({ behavior: 'smooth' });
+            })
+            .catch(error => {
+                console.error('Error fetching recipes:', error);
+                document.getElementById('recipe-results').innerHTML = `<p>An error occurred. Please try again later.</p>`;
             });
         }
     </script>

@@ -24,14 +24,13 @@
             </ul>
         </nav>
     </header>
-    </header>
 
     <section class="container mt-5">
         <div class="row">
             <!-- Input Form Section -->
             <div class="col-md-6">
-                <div class="card p-4">
-                    <h2 class="card-title">Add Food Item</h2>
+                <div class="card p-4 shadow-sm">
+                    <h2 class="card-title fw-bold text-dark">Add Food Item</h2>
                     <form id="foodForm">
                         <div class="mb-3">
                             <label for="foodName" class="form-label">Food Name</label>
@@ -45,29 +44,34 @@
                             <label for="expDate" class="form-label">Expiration Date</label>
                             <input type="date" class="form-control" id="expDate" required>
                         </div>
-                        <button type="submit" class="btn btn-primary">Add Item</button>
+                        <button type="submit" class="btn btn-danger w-100">Add Item</button>
                     </form>
                 </div>
             </div>
-
+    
             <!-- Storage Table Section -->
             <div class="col-md-6">
-                <h2>Your Food Storage</h2>
-                <table class="table table-hover table-dark table-striped mt-4">
-                    <thead>
-                        <tr>
-                            <th>Food Name</th>
-                            <th>Quantity</th>
-                            <th>Expiration Date</th>
-                        </tr>
-                    </thead>
-                    <tbody id="food-storage">
-                        <!-- Food storage data will be dynamically inserted here -->
-                    </tbody>
-                </table>
+                <div class="card p-4 shadow-sm">
+                    <h2 class="fw-bold text-dark">Your Food Storage</h2>
+                    <table class="table table-hover table-bordered mt-4">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Food Name</th>
+                                <th>Quantity</th>
+                                <th>Expiration Date</th>
+                                <th>Action</th> <!-- New column for the remove button -->
+                            </tr>
+                        </thead>
+                        <tbody id="food-storage">
+                            <!-- Food storage data will be dynamically inserted here -->
+                        </tbody>
+                    </table>
+                    
+                </div>
             </div>
         </div>
     </section>
+    
 
     <script>
         // Fetch food storage data from Flask API and display in the table
@@ -82,8 +86,17 @@
                             <td>${item.food_name}</td>
                             <td>${item.quantity}</td>
                             <td>${item.expiration_date}</td>
+                            <td><button class="btn btn-danger btn-sm remove-btn" data-food-name="${item.food_name}">Remove</button></td>
                         `;
                         storageTable.appendChild(row);
+                    });
+
+                    // Add event listeners to all "Remove" buttons
+                    document.querySelectorAll('.remove-btn').forEach(button => {
+                        button.addEventListener('click', function() {
+                            const foodName = this.getAttribute('data-food-name');
+                            removeFoodItem(foodName);
+                        });
                     });
                 })
                 .catch(error => console.error('Error fetching data:', error));
@@ -119,14 +132,42 @@
                     <td>${data.food_name}</td>
                     <td>${data.quantity}</td>
                     <td>${data.expiration_date}</td>
+                    <td><button class="btn btn-danger btn-sm remove-btn" data-food-name="${data.food_name}">Remove</button></td>
                 `;
                 storageTable.appendChild(row);
+
+                // Add event listener to the new "Remove" button
+                row.querySelector('.remove-btn').addEventListener('click', function() {
+                    removeFoodItem(data.food_name);
+                });
 
                 // Reset form
                 document.getElementById('foodForm').reset();
             })
             .catch(error => console.error('Error adding food item:', error));
         });
+
+        // Function to remove a food item
+        function removeFoodItem(foodName) {
+            fetch('/api/remove_food', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ food_name: foodName })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Remove the corresponding row from the table
+                const rows = document.querySelectorAll('#food-storage tr');
+                rows.forEach(row => {
+                    if (row.querySelector('td') && row.querySelector('td').innerText === foodName) {
+                        row.remove();
+                    }
+                });
+            })
+            .catch(error => console.error('Error removing food item:', error));
+        }
     </script>
 </body>
 </html>
