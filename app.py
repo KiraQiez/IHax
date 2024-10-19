@@ -5,26 +5,37 @@ import requests
 import pandas as pd
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+import logging
 
+# Initialize the Flask application
 app = Flask(__name__)
-app.secret_key = '2a38fdd7dea359fbd744fe41'
+app.secret_key = '2a38fdd7dea359fbd744fe41'  # Replace with a secure key in production
 
 # Database connection details
 db = pymysql.connect(
     host="localhost",
-    user="root",         
-    password="",         
-    database="foodwaste"  
+    user="root",
+    password="",
+    database="foodwaste"
 )
 
 # Edamam API credentials
 app_id = '76f17ad0'  # Replace with your Edamam App ID
 app_key = '0250325b6e1ecbeaa7f31ce24da04370'  # Replace with your Edamam App Key
 
+# Set up logging
+logging.basicConfig(level=logging.DEBUG)
+
 # Route for Homepage (home.html)
 @app.route('/')
 def home_page():
     return render_template('home.html')
+
+
+# Route for Homepage (contact.html)
+@app.route('/contact')
+def contact():
+    return render_template('contact.html')
 
 # Route for Login Page (HTML)
 @app.route('/login', methods=['GET', 'POST'])
@@ -34,27 +45,33 @@ def login_page():
         password = request.form['password']
 
         # Check credentials in the database
-        cursor = db.cursor()
-        cursor.execute("SELECT * FROM account WHERE username = %s", (username,))
-        user = cursor.fetchone()
+        with db.cursor() as cursor:
+            cursor.execute("SELECT * FROM account WHERE username = %s", (username,))
+            user = cursor.fetchone()
 
-        if user and check_password_hash(user[2], password):  # user[2] is the hashed password column
-            session['user_id'] = user[0]  # Store user ID in session
-            session['username'] = user[1]  # Store username in session
-            flash('Login successful!', 'success')
-            return redirect(url_for('home_page'))  # Redirect to the home page
+        logging.debug(f"Username: {username}, User found: {user}")  # Log the username and user fetch result
+
+        if user:
+            if check_password_hash(user[2], password):  # user[2] is the hashed password column
+                session['user_id'] = user[0]  # Store user ID in session
+                session['username'] = user[1]  # Store username in session
+                return redirect(url_for('home_page', status='success'))  # Redirect with success status
+            else:
+                return redirect(url_for('login_page', status='invalid'))  # Redirect with invalid password status
         else:
-            flash('Invalid username or password. Please try again.', 'danger')
+            return redirect(url_for('login_page', status='not_registered'))  # Redirect with username not found status
 
     return render_template('login.html')
 
-# Route to handle Logout
-@app.route('/logout')
-def logout():
-    session.clear()  # Clear session data to log the user out
-    flash('You have been logged out.', 'success')
-    return redirect(url_for('home_page'))
-
+# Check if username already exists
+@app.route('/check-username')
+def check_username():
+    username = request.args.get('username')
+    with db.cursor() as cursor:
+        cursor.execute("SELECT * FROM account WHERE username = %s", (username,))
+        user = cursor.fetchone()
+    exists = user is not None
+    return jsonify({'exists': exists})
 
 # Route for Register Page (HTML)
 @app.route('/register', methods=['GET', 'POST'])
@@ -73,17 +90,16 @@ def register_page():
         hashed_password = generate_password_hash(password)
 
         # Insert new user into the database
-        cursor = db.cursor()
-        try:
-            cursor.execute("INSERT INTO account (username, password) VALUES (%s, %s)", (username, hashed_password))
-            db.commit()
-            flash('Registration successful! Please login.', 'success')
-            return redirect(url_for('login_page'))
-        except pymysql.IntegrityError:
-            flash('Username already exists. Please choose a different username.', 'danger')
+        with db.cursor() as cursor:
+            try:
+                cursor.execute("INSERT INTO account (username, password) VALUES (%s, %s)", (username, hashed_password))
+                db.commit()
+                flash('Registration successful! Please login.', 'success')
+                return redirect(url_for('login_page'))
+            except pymysql.IntegrityError:
+                flash('Username already exists. Please choose a different username.', 'danger')
 
     return render_template('register.html')
-
 
 # Route for Storage Page (HTML)
 @app.route('/storage')
@@ -93,10 +109,11 @@ def ingredients_page():
 # API to fetch ingredients from the database
 @app.route('/api/storage', methods=['GET'])
 def get_ingredients():
-    cursor = db.cursor()
-    query = "SELECT foodname, quantity, expdate FROM storage WHERE userid = 1"  # Adjust user_id logic as needed
-    cursor.execute(query)
-    rows = cursor.fetchall()
+    user_id = session.get('user_id', 1)  # Adjust user_id logic as needed; default to 1 if not logged in
+    with db.cursor() as cursor:
+        query = "SELECT foodname, quantity, expdate FROM storage WHERE userid = %s"
+        cursor.execute(query, (user_id,))
+        rows = cursor.fetchall()
 
     # Format the result as a list of dictionaries (JSON)
     ingredients = []
@@ -121,14 +138,13 @@ def search_recipes(query, app_id, app_key, calories):
     url = 'https://api.edamam.com/search'
     
     # Set calorie filter based on the user's selection
+    calorie_range = None
     if calories == '1':
         calorie_range = '0-500'
     elif calories == '2':
         calorie_range = '0-1000'
     elif calories == '3':
         calorie_range = '2000+'  # More than 2000 kcal
-    else:
-        calorie_range = None
     
     # API parameters
     params = {
@@ -143,7 +159,13 @@ def search_recipes(query, app_id, app_key, calories):
     if calorie_range:
         params['calories'] = calorie_range
     
-    response = requests.get(url, params=params)
+    try:
+        response = requests.get(url, params=params)
+        response.raise_for_status()  # Raise an error for bad responses
+    except requests.RequestException as e:
+        logging.error(f"Error fetching recipes: {e}")
+        return pd.DataFrame()  # Return an empty DataFrame on error
+
     data = response.json()
     
     recipes = []
@@ -151,7 +173,7 @@ def search_recipes(query, app_id, app_key, calories):
         recipes.append({
             'Label': recipe['recipe']['label'],
             'Ingredients': ', '.join(recipe['recipe']['ingredientLines']),
-            'Calories': recipe['recipe'].get('calories', 0),  # Adding calories to the dataframe
+            'Calories': recipe['recipe'].get('calories', 0),
             'URL': recipe['recipe']['url']
         })
     
@@ -160,6 +182,9 @@ def search_recipes(query, app_id, app_key, calories):
 
 # Function for content-based filtering using cosine similarity
 def recommend_recipes(df, recipe_index):
+    if df.empty:
+        return []  # Return empty if DataFrame is empty
+
     vectorizer = CountVectorizer()
     X = vectorizer.fit_transform(df['Ingredients'])
     cosine_sim = cosine_similarity(X, X)
@@ -190,9 +215,15 @@ def search():
     recipes_df = search_recipes(query, app_id, app_key, calories)
     
     # Get recommendations based on the first result
-    recommendations = recommend_recipes(recipes_df, 0)
+    recommendations = recommend_recipes(recipes_df, 0) if not recipes_df.empty else []
     
     return jsonify(recommendations)
+
+# Error handler for logging exceptions
+@app.errorhandler(Exception)
+def handle_exception(e):
+    logging.error(f"An error occurred: {e}")
+    return "An internal error occurred", 500
 
 if __name__ == '__main__':
     app.run(debug=True)
