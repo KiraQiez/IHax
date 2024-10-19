@@ -47,6 +47,38 @@ def nutrition_page():
 def storage_page():
     return render_template('storage.html')
 
+@app.route('/magic')
+def magic_page():
+    user_id = 1  # Assuming a static user ID
+    expiry_threshold = datetime.now() + timedelta(days=2)  # Ingredients expiring in the next 3 days
+
+    # Fetch ingredients from the database that are close to expiration
+    db = get_db_connection()
+    cursor = db.cursor()
+    
+    query = """
+    SELECT foodname FROM storage
+    WHERE userid = %s AND expdate <= %s
+    """
+    cursor.execute(query, (user_id, expiry_threshold))
+    near_expiry_ingredients = cursor.fetchall()
+    cursor.close()
+    
+    # Convert the ingredients into a list
+    ingredients = [ingredient[0] for ingredient in near_expiry_ingredients]
+
+    # If no near-expiry ingredients, display a message
+    if not ingredients:
+        return render_template("magic.html", ingredients=[], recipes=[])
+
+    # Fetch recipes using the ingredients
+    recipes = get_recipes(ingredients)
+
+    # Render the template and pass the ingredients and recipes
+    return render_template('magic.html', ingredients=", ".join(ingredients), recipes=recipes)
+
+
+
 
 
 @app.route("/check_recipes", methods=["POST"])
@@ -101,8 +133,10 @@ def get_recipes(ingredients):
             {
                 "name": recipe["recipe"]["label"],
                 "url": recipe["recipe"]["url"],
-                "ingredients": recipe["recipe"]["ingredientLines"],
                 "image": recipe["recipe"]["image"],
+                "description": recipe["recipe"].get("description", "No description available."),
+                "servings": recipe["recipe"].get("yield", "Not specified"),
+                "time": recipe["recipe"].get("totalTime", "Unknown"),
             }
             for recipe in recipes
         ]
@@ -111,8 +145,9 @@ def get_recipes(ingredients):
         return []
 
 
+
 # Function to search for recipes using Edamam API
-def search_recipes(query, app_id, app_key, calories=None, mealType=None):
+def search_recipes(query, app_id, app_key, calories=None, mealType=None, cuisineType=None):
     url = 'https://api.edamam.com/search'
 
     # Set calorie filter based on the user's input, allow no upper limit if not set
@@ -135,6 +170,10 @@ def search_recipes(query, app_id, app_key, calories=None, mealType=None):
     if mealType:
         params['mealType'] = mealType
 
+    # Add cuisineType filter if applicable
+    if cuisineType:
+        params['cuisineType'] = cuisineType
+
     # Make request to Edamam API
     response = requests.get(url, params=params)
     data = response.json()
@@ -146,12 +185,12 @@ def search_recipes(query, app_id, app_key, calories=None, mealType=None):
             'Label': recipe['recipe']['label'],
             'Ingredients': ', '.join(recipe['recipe']['ingredientLines']),
             'Calories': recipe['recipe'].get('calories', 0),
-            'Calories': recipe['recipe'].get('calories', 0),
             'URL': recipe['recipe']['url']
         })
 
     df = pd.DataFrame(recipes)
     return df
+
 
 # Function for content-based filtering using cosine similarity
 def recommend_recipes(df, recipe_index):
@@ -184,29 +223,38 @@ def search():
     query = request.form['query']
     calories = request.form['calories'] or None  # Allow None for no upper limit
     mealType = request.form['mealType'] or None  # Allow None if no mealType
+    cuisineType = request.form['cuisineType'] or None  # Allow None if no cuisineType
 
-    # Search for recipes with ingredients, calorie, and meal type filtering
-    recipes_df = search_recipes(query, app_id, app_key, calories, mealType)
+    # Search for recipes with ingredients, calorie, meal type, and cuisine type filtering
+    recipes_df = search_recipes(query, app_id, app_key, calories, mealType, cuisineType)
 
     # Get recommendations based on the first result (content-based filtering)
     recommendations = recommend_recipes(recipes_df, 0)
 
     return jsonify(recommendations)
 
+
 # Error handler for logging exceptions
 @app.errorhandler(Exception)
 def handle_exception(e):
     logging.error(f"An error occurred: {e}")
     return "An internal error occurred", 500
-
 @app.route('/api/storage', methods=['GET'])
 def get_food_storage():
     user_id = 1  # Fixed user_id as 1
     db = get_db_connection()  # Establish a database connection
     cursor = db.cursor()
 
-    # Query to fetch food storage based on the fixed user_id
-    query = "SELECT foodname, quantity, expdate FROM storage WHERE userid = %s"
+    # Define the threshold for expired items (3 days past expiration)
+    expiry_threshold = datetime.now() - timedelta(days=3)
+
+    # Delete food items that are past the expiration threshold
+    delete_query = "DELETE FROM storage WHERE userid = %s AND expdate < %s"
+    cursor.execute(delete_query, (user_id, expiry_threshold))
+    db.commit()
+
+    # Query to fetch remaining food storage sorted by nearest expiration date
+    query = "SELECT storage_id, foodname, quantity, expdate FROM storage WHERE userid = %s ORDER BY expdate ASC"
     cursor.execute(query, (user_id,))
     rows = cursor.fetchall()
 
@@ -216,19 +264,25 @@ def get_food_storage():
     storage_items = []
     for row in rows:
         storage_items.append({
-            'food_name': row[0],
-            'quantity': row[1],
-            'expiration_date': row[2].strftime('%Y-%m-%d')  # Format date to YYYY-MM-DD
+            'storage_id': row[0],
+            'food_name': row[1],
+            'quantity': row[2],
+            'expiration_date': row[3].strftime('%Y-%m-%d')  # Format date to YYYY-MM-DD
         })
 
     return jsonify(storage_items)
 
+
 @app.route('/api/add_food', methods=['POST'])
 def add_food_item():
-    user_id = 1
-    food_name = request.json['food_name']
-    quantity = request.json['quantity']
-    exp_date = request.json['exp_date']
+    user_id = 1  # Fixed user_id as there is no login system
+    food_name = request.json.get('food_name')
+    quantity = request.json.get('quantity')
+    exp_date = request.json.get('expiration_date')
+
+    # Make sure input data is valid
+    if not food_name or not quantity or not exp_date:
+        return jsonify({'message': 'Missing data!'}), 400
 
     db = get_db_connection()  # Establish a database connection
     cursor = db.cursor()
@@ -237,24 +291,31 @@ def add_food_item():
     try:
         cursor.execute(query, (user_id, food_name, quantity, exp_date))
         db.commit()
-        return jsonify({'message': 'Food item added successfully!'}), 201
+        # Return the added food item as a response
+        return jsonify({
+            'food_name': food_name,
+            'quantity': quantity,
+            'expiration_date': exp_date
+        }), 201
     except Exception as e:
         db.rollback()
         return jsonify({'message': 'Error adding food item.', 'error': str(e)}), 400
     finally:
+        cursor.close()
         db.close()
+
 
 @app.route('/api/remove_food', methods=['POST'])
 def remove_food_item():
     user_id = 1
-    food_name = request.json['food_name']
+    storage_id = request.json['storage_id']
 
     db = get_db_connection()  # Establish a database connection
     cursor = db.cursor()
 
-    query = "DELETE FROM storage WHERE userid = %s AND foodname = %s"
+    query = "DELETE FROM storage WHERE userid = %s AND storage_id = %s"
     try:
-        cursor.execute(query, (user_id, food_name))
+        cursor.execute(query, (user_id, storage_id))
         db.commit()
         return jsonify({'message': 'Food item removed successfully!'}), 200
     except Exception as e:

@@ -7,9 +7,46 @@
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    <style>
+        /* Custom styles for status pill shapes */
+        .badge-pill {
+            border-radius: 5px;
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .status-expiring-soon {
+            background-color: #fef3c7; /* Soft yellow */
+            color: #b45309; /* Darker yellow for text */
+        }
+
+        .status-good {
+            background-color: #d1fae5; /* Soft green */
+            color: #047857; /* Darker green for text */
+        }
+
+        /* Custom styles for pagination */
+        .pagination .page-link {
+            color: #dc3545; /* Red color similar to btn-danger */
+        }
+
+        .pagination .page-link:hover {
+            background-color: #dc3545; /* Red background on hover */
+            color: #fff; /* White text on hover */
+        }
+
+        .pagination .page-item.active .page-link {
+            background-color: #dc3545; /* Active page link red */
+            border-color: #dc3545; /* Active page link border red */
+            color: #fff; /* Active page link text white */
+        }
+    </style>
 </head>
 
 <body>
+    <div class="base4">
     <header>
         <nav class="navbar">
             <div class="logo d-flex align-items-center">
@@ -20,17 +57,56 @@
                 <li><a href="/">Home</a></li>
                 <li><a href="/storage">Storage</a></li>
                 <li><a href="/nutrition">Recipe</a></li>
-                <li><a href="/contact">Contact</a></li>
+                <li><a href="/magic">Magic</a></li>
             </ul>
         </nav>
     </header>
 
-    <section class="container mt-5">
+    <section class="ss container mt-8">
         <div class="row">
-            <!-- Input Form Section -->
-            <div class="col-md-6">
+            <!-- Food Storage Table Section -->
+            <div class="col-md-12">
                 <div class="card p-4 shadow-sm">
-                    <h2 class="card-title fw-bold text-dark">Add Food Item</h2>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h2 class="fw-bold text-dark">Your Food Storage</h2>
+                        <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#addFoodModal">Add Food Item</button>
+                    </div>
+                    <table class="table table-hover table-bordered mt-4">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Food Name</th>
+                                <th>Quantity</th>
+                                <th>Expiration Date</th>
+                                <th>Status</th> <!-- New column for status -->
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="food-storage">
+                            <!-- Food storage data will be dynamically inserted here -->
+                        </tbody>
+                    </table>
+                    
+                    <!-- Pagination controls -->
+                    <nav>
+                        <ul class="pagination justify-content-center" id="pagination-controls">
+                            <!-- Pagination buttons will be dynamically inserted here -->
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+    <!-- Add Food Item Modal -->
+    <div class="modal fade" id="addFoodModal" tabindex="-1" aria-labelledby="addFoodModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addFoodModalLabel">Add Food Item</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
                     <form id="foodForm">
                         <div class="mb-3">
                             <label for="foodName" class="form-label">Food Name</label>
@@ -48,59 +124,93 @@
                     </form>
                 </div>
             </div>
-    
-            <!-- Storage Table Section -->
-            <div class="col-md-6">
-                <div class="card p-4 shadow-sm">
-                    <h2 class="fw-bold text-dark">Your Food Storage</h2>
-                    <table class="table table-hover table-bordered mt-4">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Food Name</th>
-                                <th>Quantity</th>
-                                <th>Expiration Date</th>
-                                <th>Action</th> <!-- New column for the remove button -->
-                            </tr>
-                        </thead>
-                        <tbody id="food-storage">
-                            <!-- Food storage data will be dynamically inserted here -->
-                        </tbody>
-                    </table>
-                    
-                </div>
-            </div>
         </div>
-    </section>
-    
+    </div>
 
     <script>
-        // Fetch food storage data from Flask API and display in the table
+        const itemsPerPage = 5;
+        let currentPage = 1;
+        let foodData = [];
+
+        // Fetch food storage data from Flask API and display in the table with pagination
         document.addEventListener('DOMContentLoaded', function() {
             fetch('/api/storage')
                 .then(response => response.json())
                 .then(data => {
-                    let storageTable = document.getElementById('food-storage');
-                    data.forEach(item => {
-                        let row = document.createElement('tr');
-                        row.innerHTML = `
-                            <td>${item.food_name}</td>
-                            <td>${item.quantity}</td>
-                            <td>${item.expiration_date}</td>
-                            <td><button class="btn btn-danger btn-sm remove-btn" data-food-name="${item.food_name}">Remove</button></td>
-                        `;
-                        storageTable.appendChild(row);
-                    });
-
-                    // Add event listeners to all "Remove" buttons
-                    document.querySelectorAll('.remove-btn').forEach(button => {
-                        button.addEventListener('click', function() {
-                            const foodName = this.getAttribute('data-food-name');
-                            removeFoodItem(foodName);
-                        });
-                    });
+                    foodData = data; // Store the food data globally
+                    displayFoodStorage(currentPage);
+                    setupPagination();
                 })
                 .catch(error => console.error('Error fetching data:', error));
         });
+
+        // Display food storage data for a specific page
+        function displayFoodStorage(page) {
+            const storageTable = document.getElementById('food-storage');
+            storageTable.innerHTML = ''; // Clear table
+
+            const start = (page - 1) * itemsPerPage;
+            const end = start + itemsPerPage;
+            const paginatedData = foodData.slice(start, end);
+
+            paginatedData.forEach(item => {
+                const status = calculateStatus(item.expiration_date);
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.food_name}</td>
+                    <td>${item.quantity}</td>
+                    <td>${item.expiration_date}</td>
+                    <td><span class="badge badge-pill ${status.class}">${status.text}</span></td> <!-- Display calculated status -->
+                    <td><button class="btn btn-danger btn-sm remove-btn" data-storage-id="${item.storage_id}">Remove</button></td>
+                `;
+                storageTable.appendChild(row);
+            });
+
+            // Add event listeners to all "Remove" buttons
+            document.querySelectorAll('.remove-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const storageId = this.getAttribute('data-storage-id');
+                    removeFoodItem(storageId);
+                });
+            });
+        }
+
+        // Calculate the status based on the expiration date
+        function calculateStatus(expirationDate) {
+            const currentDate = new Date();
+            const expDate = new Date(expirationDate);
+            const daysDiff = (expDate - currentDate) / (1000 * 60 * 60 * 24);
+
+            if (daysDiff <= 3 && daysDiff >= 0) {
+                return { text: 'Expiring Soon', class: 'status-expiring-soon' };
+            } else if (daysDiff < 0) {
+                return { text: 'Expired', class: 'status-expiring-soon' }; // Same style for expired
+            } else {
+                return { text: 'Good', class: 'status-good' };
+            }
+        }
+
+        // Setup pagination buttons
+        function setupPagination() {
+            const totalPages = Math.ceil(foodData.length / itemsPerPage);
+            const paginationControls = document.getElementById('pagination-controls');
+            paginationControls.innerHTML = ''; // Clear pagination
+
+            for (let i = 1; i <= totalPages; i++) {
+                const pageItem = document.createElement('li');
+                pageItem.classList.add('page-item');
+                pageItem.innerHTML = `<a class="page-link page-link-danger" href="#">${i}</a>`;
+                if (i === currentPage) {
+                    pageItem.classList.add('active');
+                }
+                pageItem.addEventListener('click', function() {
+                    currentPage = i;
+                    displayFoodStorage(currentPage);
+                    setupPagination();
+                });
+                paginationControls.appendChild(pageItem);
+            }
+        }
 
         // Form submission to add new food item
         document.getElementById('foodForm').addEventListener('submit', function(event) {
@@ -112,7 +222,7 @@
             let expDate = document.getElementById('expDate').value;
 
             // Send data to Flask API
-            fetch('/api/storage', {
+            fetch('/api/add_food', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -120,54 +230,49 @@
                 body: JSON.stringify({
                     food_name: foodName,
                     quantity: quantity,
-                    expiration_date: expDate
+                    expiration_date: expDate,
                 })
             })
             .then(response => response.json())
             .then(data => {
-                // Update the table with the new item
-                let storageTable = document.getElementById('food-storage');
-                let row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${data.food_name}</td>
-                    <td>${data.quantity}</td>
-                    <td>${data.expiration_date}</td>
-                    <td><button class="btn btn-danger btn-sm remove-btn" data-food-name="${data.food_name}">Remove</button></td>
-                `;
-                storageTable.appendChild(row);
+                // Check if adding was successful
+                if (data.food_name) {
+                    // Close the modal
+                    const addFoodModal = document.getElementById('addFoodModal');
+                    const modalInstance = bootstrap.Modal.getInstance(addFoodModal);
+                    modalInstance.hide();
 
-                // Add event listener to the new "Remove" button
-                row.querySelector('.remove-btn').addEventListener('click', function() {
-                    removeFoodItem(data.food_name);
-                });
-
-                // Reset form
-                document.getElementById('foodForm').reset();
+                    // Reload the page to reflect the changes
+                    window.location.reload();
+                } else {
+                    alert('Failed to add the food item. Please try again.');
+                }
             })
             .catch(error => console.error('Error adding food item:', error));
         });
 
-        // Function to remove a food item
-        function removeFoodItem(foodName) {
+        // Function to remove a food item by storage_id
+        function removeFoodItem(storageId) {
             fetch('/api/remove_food', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ food_name: foodName })
+                body: JSON.stringify({ storage_id: storageId })
             })
             .then(response => response.json())
             .then(data => {
-                // Remove the corresponding row from the table
-                const rows = document.querySelectorAll('#food-storage tr');
-                rows.forEach(row => {
-                    if (row.querySelector('td') && row.querySelector('td').innerText === foodName) {
-                        row.remove();
-                    }
-                });
+                // Remove the item from foodData and update the table
+                foodData = foodData.filter(item => item.storage_id != storageId);
+                setupPagination();
+                displayFoodStorage(currentPage);
             })
             .catch(error => console.error('Error removing food item:', error));
         }
+
     </script>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

@@ -14,19 +14,17 @@
 <body>
     <div class="base2">
         <header>
-            <nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm">
-                <div class="container">
-                    <div class="logo d-flex align-items-center">
-                        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" width="50">
-                        <p class="ms-2 mb-0">HappyRoast</p>
-                    </div>
-                    <ul class="nav navbar-nav ms-auto">
-                        <li class="nav-item"><a href="/" class="nav-link">Home</a></li>
-                        <li class="nav-item"><a href="/storage" class="nav-link">Storage</a></li>
-                        <li class="nav-item"><a href="/nutrition" class="nav-link">Recipe</a></li>
-                        <li class="nav-item"><a href="/contact" class="nav-link">Contact</a></li>
-                    </ul>
+            <nav class="navbar">
+                <div class="logo d-flex align-items-center">
+                    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo">
+                    <p>HappyRoast</p>
                 </div>
+                <ul class="nav-links d-flex">
+                    <li><a href="/">Home</a></li>
+                    <li><a href="/storage">Storage</a></li>
+                    <li><a href="/nutrition">Recipe</a></li>
+                    <li><a href="/magic">Magic</a></li>
+                </ul>
             </nav>
         </header>
 
@@ -71,6 +69,35 @@
                             </select>
                         </div>
 
+                        <!-- Cuisine Type -->
+                        <div class="mb-3">
+                            <label for="cuisine-type-select" class="form-label">Cuisine Type</label>
+                            <select id="cuisine-type-select" class="form-select">
+                                <option value="">Any</option>
+                                <option value="american">American</option>
+                                <option value="asian">Asian</option>
+                                <option value="british">British</option>
+                                <option value="caribbean">Caribbean</option>
+                                <option value="central europe">Central Europe</option>
+                                <option value="chinese">Chinese</option>
+                                <option value="eastern europe">Eastern Europe</option>
+                                <option value="french">French</option>
+                                <option value="greek">Greek</option>
+                                <option value="indian">Indian</option>
+                                <option value="italian">Italian</option>
+                                <option value="japanese">Japanese</option>
+                                <option value="korean">Korean</option>
+                                <option value="kosher">Kosher</option>
+                                <option value="mediterranean">Mediterranean</option>
+                                <option value="mexican">Mexican</option>
+                                <option value="middle eastern">Middle Eastern</option>
+                                <option value="nordic">Nordic</option>
+                                <option value="south american">South American</option>
+                                <option value="south east asian">South East Asian</option>
+                                <option value="world">World</option>
+                            </select>
+                        </div>
+
                         <!-- Search Button -->
                         <button class="mb-3 btn btn-danger" onclick="searchRecipes()">
                             <i class="fas fa-search"></i> Search
@@ -99,11 +126,12 @@
             const ingredients = document.getElementById('ingredient-input').value;
             const calories = document.getElementById('calories-select').value;
             const mealType = document.getElementById('meal-type-select').value;
+            const cuisineType = document.getElementById('cuisine-type-select').value;
 
             fetch('/search', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: `query=${encodeURIComponent(ingredients)}&calories=${encodeURIComponent(calories)}&mealType=${encodeURIComponent(mealType)}`
+                body: `query=${encodeURIComponent(ingredients)}&calories=${encodeURIComponent(calories)}&mealType=${encodeURIComponent(mealType)}&cuisineType=${encodeURIComponent(cuisineType)}`
             })
             .then(response => response.json())
             .then(data => {

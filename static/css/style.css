@@ -135,6 +135,24 @@ body {
     background-repeat: no-repeat;
 }
 
+.base4 {
+    padding: 1px;
+    height: 100svh;
+    background-image: url('../images/bg8.png');  /* Correct relative path */
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.base5 {
+    padding: 1px;
+    height: 120svh;
+    background-image: url('../images/bg9.png');  /* Correct relative path */
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
 
 
 .services {
@@ -218,10 +236,7 @@ body {
     transition: all 0.3s ease; /* Smooth transition */
 }
 
-.input-group-wrapper .form-control {
-    width: 500px;
-    transition: all 0.3s ease;
-}
+
 
 /* Change input field appearance on hover and focus */
 .input-group-wrapper .form-select:hover, 
