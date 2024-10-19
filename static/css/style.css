@@ -159,3 +159,13 @@ body {
     margin-bottom: 20px;
 }
 
+
+/*Food Storage*/
+
+.table-hover tbody tr:hover {
+    background-color: rgba(241, 53, 109, 0.2); /* Custom hover effect */
+}
+
+table {
+    color: #f4f1eb;
+}

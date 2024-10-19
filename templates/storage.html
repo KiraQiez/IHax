@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Food Storage</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+    <header>
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <div class="container-fluid">
+                <a class="navbar-brand d-flex align-items-center" href="/">
+                    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" width="40" height="40">
+                    <span class="ms-2">HappyRoast</span>
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav ms-auto">
+                        <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#">About</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#">Services</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#">Contact</a></li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <section class="container mt-5">
+        <div class="row">
+            <!-- Input Form Section -->
+            <div class="col-md-6">
+                <div class="card p-4">
+                    <h2 class="card-title">Add Food Item</h2>
+                    <form id="foodForm">
+                        <div class="mb-3">
+                            <label for="foodName" class="form-label">Food Name</label>
+                            <input type="text" class="form-control" id="foodName" placeholder="Enter food name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="quantity" class="form-label">Quantity</label>
+                            <input type="number" class="form-control" id="quantity" placeholder="Enter quantity" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="expDate" class="form-label">Expiration Date</label>
+                            <input type="date" class="form-control" id="expDate" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Add Item</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Storage Table Section -->
+            <div class="col-md-6">
+                <h2>Your Food Storage</h2>
+                <table class="table table-hover table-dark table-striped mt-4">
+                    <thead>
+                        <tr>
+                            <th>Food Name</th>
+                            <th>Quantity</th>
+                            <th>Expiration Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="food-storage">
+                        <!-- Food storage data will be dynamically inserted here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        // Fetch food storage data from Flask API and display in the table
+        document.addEventListener('DOMContentLoaded', function() {
+            fetch('/api/storage')
+                .then(response => response.json())
+                .then(data => {
+                    let storageTable = document.getElementById('food-storage');
+                    data.forEach(item => {
+                        let row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${item.food_name}</td>
+                            <td>${item.quantity}</td>
+                            <td>${item.expiration_date}</td>
+                        `;
+                        storageTable.appendChild(row);
+                    });
+                })
+                .catch(error => console.error('Error fetching data:', error));
+        });
+
+        // Form submission to add new food item
+        document.getElementById('foodForm').addEventListener('submit', function(event) {
+            event.preventDefault(); // Prevent the form from reloading the page
+
+            // Get input values
+            let foodName = document.getElementById('foodName').value;
+            let quantity = document.getElementById('quantity').value;
+            let expDate = document.getElementById('expDate').value;
+
+            // Send data to Flask API
+            fetch('/api/storage', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    food_name: foodName,
+                    quantity: quantity,
+                    expiration_date: expDate
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Update the table with the new item
+                let storageTable = document.getElementById('food-storage');
+                let row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${data.food_name}</td>
+                    <td>${data.quantity}</td>
+                    <td>${data.expiration_date}</td>
+                `;
+                storageTable.appendChild(row);
+
+                // Reset form
+                document.getElementById('foodForm').reset();
+            })
+            .catch(error => console.error('Error adding food item:', error));
+        });
+    </script>
+</body>
+</html>
