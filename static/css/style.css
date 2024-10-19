@@ -10,6 +10,7 @@ body {
     
 }
 
+
 .navbar {
     width: 90%;
     max-width: 1200px; /* Limits the maximum width for better control on larger screens */
@@ -102,15 +103,20 @@ body {
     margin-top: 1rem;
 }
 
-.base{
+.hero a{
+    text-decoration: none;
+    color: #ffffff;
+}
+
+.base {
     padding: 10px;
     height: 530px;
-    background-image: url('images/bg3.png');
+    background-image: url('../images/bg3.png');  /* Correct relative path */
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
-
 }
+
 
 
 
