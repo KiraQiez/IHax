@@ -129,12 +129,12 @@ body {
 .base3 {
     padding: 1px;
     height: 100svh;
-    background-image: url('../images/bg7.png');  /* Correct relative path */
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-}
 
+}
+.recipeLabel{
+    font-size: 14px;
+
+}
 .base4 {
     padding: 1px;
     height: 100svh;
